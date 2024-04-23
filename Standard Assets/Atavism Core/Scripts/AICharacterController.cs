@@ -1,7 +1,7 @@
 using UnityEngine;
 using Atavism;
 
-public class AICharacterController : MonoBehaviour
+public class AICharacterBrain : MonoBehaviour
 {
     // Reference to the character game object
     public GameObject character;
@@ -11,7 +11,7 @@ public class AICharacterController : MonoBehaviour
 
     // AI decision-making variables
     private float movementSpeed = 5.0f;
-    private float rotationSpeed = 2.0f;
+    private float attackRange = 10.0f;
 
     void Start()
     {
@@ -22,10 +22,18 @@ public class AICharacterController : MonoBehaviour
 
     void Update()
     {
-        // Simple AI decision-making: move the character forward
+        // Simple AI decision-making: move the character towards a random target
         character.transform.Translate(Vector3.forward * movementSpeed * Time.deltaTime);
 
-        // Rotate the character towards a random target (for now)
-        character.transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
+        // Check for nearby enemies and attack if within range
+        Collider[] enemies = Physics.OverlapSphere(transform.position, attackRange);
+        foreach (Collider enemy in enemies)
+        {
+            // Attack the enemy if it's within range
+            if (enemy.gameObject.CompareTag("Enemy"))
+            {
+                // TO DO: implement attack logic
+            }
+        }
     }
 }
