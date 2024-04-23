@@ -1,139 +1,138 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Atavism;
-using System.Linq;
-using UnityEditor.PackageManager;
-
-/* //commented out until later
+using TwitchLib.Api;
+using TwitchLib.Api.V5.Models.Channels;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
+using UnityEngine.UI;
+using static System.Net.Mime.MediaTypeNames;
+using System.Diagnostics;
+using System;
 
 public class TwitchChatController : MonoBehaviour
 {
-    public string twitchUsername;
-    public string twitchOAuthToken;
-    public string twitchChannelName;
+    // Twitch API credentials
+    public string twitchChannelName = "epocharena";
+    public string twitchOAuthToken = "YOUR_OAUTH_TOKEN";
+    public string twitchClientId = "YOUR_CLIENT_ID";
+    public string twitchClientSecret = "YOUR_CLIENT_SECRET";
 
-    public GameObject panel1;
-    public GameObject panel2;
-    public float panelShowDuration = 5f;
-    public float gameStartDelay = 3f;
+    // Twitch API connection
+    private TwitchClient twitchClient;
 
-    private Client client;
-    private Queue<string> playerQueue = new Queue<string>();
-    private string currentPlayer;
-    private bool isGameStarted = false;
+    // Chat message queue
+    private Queue<string> chatMessageQueue = new Queue<string>();
 
-    private void Start()
+    // UI elements
+    public Text chatLogText;
+    public InputField userInputField;
+
+    // Game state
+    private bool isPlayerInQueue = false;
+    private bool isGameInProgress = false;
+
+    void Start()
     {
-        Application.runInBackground = true;
-        Connect();
+        // Initialize Twitch API connection
+        twitchClient = new TwitchClient(twitchClientId, twitchClientId, twitchOAuthToken);
+        twitchClient.OnMessageReceived += OnMessageReceived;
+        twitchClient.OnConnected += OnConnected;
+        twitchClient.Connect();
+
+        // Initialize chat log text
+        chatLogText.text = "";
     }
 
-    private void Connect()
+    void Update()
     {
-        client = new Client();
-        client.Initialize(new ConnectionCredentials(twitchUsername, twitchOAuthToken), twitchChannelName);
-
-        client.OnConnected += OnConnected;
-        client.OnMessageReceived += OnMessageReceived;
-
-        client.Connect();
+        // Process chat messages
+        while (chatMessageQueue.Count > 0)
+        {
+            string message = chatMessageQueue.Dequeue();
+            ProcessChatMessage(message);
+        }
     }
 
-    private void OnConnected(object sender, TwitchLib.Client.Events.OnConnectedArgs e)
+    void OnConnected(object sender, OnConnectedArgs e)
     {
         Debug.Log("Connected to Twitch chat!");
     }
 
-    private void OnMessageReceived(object sender, TwitchLib.Client.Events.OnMessageReceivedArgs e)
+    void OnMessageReceived(object sender, OnMessageReceivedArgs e)
     {
-        if (e.ChatMessage.Message.StartsWith("!play"))
-        {
-            string playerName = e.ChatMessage.Username;
+        // Add message to queue
+        chatMessageQueue.Enqueue(e.Message.ChatMessage.Message);
+    }
 
-            // Check if the player has a game character in the Atavism database
-            if (AtavismClient.Instance.WorldManager.CharacterExistsForAccount(playerName))
-            {
-                // Add the player to the queue
-                playerQueue.Enqueue(playerName);
-                client.SendMessage(twitchChannelName, $"{playerName} has been added to the queue!");
-            }
-            else
-            {
-                // Send a message with the registration link
-                client.SendMessage(twitchChannelName, $"{playerName}, you need to create a game character first. Please visit [registration link] to register and create a character.");
-            }
-        }
-        else if (e.ChatMessage.Message.StartsWith("!queue"))
-        {
-            string playerName = e.ChatMessage.Username;
+    void ProcessChatMessage(string message)
+    {
+        // Split message into command and arguments
+        string[] parts = message.Split(' ');
+        string command = parts[0].ToLower();
+        string[] args = new string[parts.Length - 1];
+        Array.Copy(parts, 1, args, 0, parts.Length - 1);
 
-            if (playerQueue.Contains(playerName))
-            {
-                int position = playerQueue.ToArray().ToList().IndexOf(playerName) + 1;
-                client.SendMessage(twitchChannelName, $"{playerName}, you are currently at position {position} in the queue.");
-            }
-            else
-            {
-                client.SendMessage(twitchChannelName, $"{playerName}, you are not currently in the queue. Type !play to join the queue.");
-            }
+        // Handle commands
+        switch (command)
+        {
+            case "!play":
+                HandlePlayCommand(args);
+                break;
+            case "!createaccount":
+                HandleCreateAccountCommand(args);
+                break;
+            case "!createplayer":
+                HandleCreatePlayerCommand(args);
+                break;
+            default:
+                // Unknown command
+                Debug.Log("Unknown command: " + command);
+                break;
         }
     }
 
-    private void Update()
+    void HandlePlayCommand(string[] args)
     {
-        if (!isGameStarted && playerQueue.Count > 0)
+        // Check if player is already in queue
+        if (isPlayerInQueue)
         {
-            currentPlayer = playerQueue.Dequeue();
-            StartCoroutine(StartGame());
+            chatLogText.text += "You are already in the queue!\n";
+            return;
         }
+
+        // Check if player has an account and character
+        // TO DO: implement account and character checks
+
+        // Add player to queue
+        isPlayerInQueue = true;
+        chatLogText.text += "You have been added to the queue!\n";
     }
 
-    private IEnumerator StartGame()
+    void HandleCreateAccountCommand(string[] args)
     {
-        isGameStarted = true;
+        // Create new account
+        // TO DO: implement account creation
 
-        // Show panel 1
-        panel1.SetActive(true);
-        yield return new WaitForSeconds(panelShowDuration);
-        panel1.SetActive(false);
-
-        // Show panel 2
-        panel2.SetActive(true);
-        yield return new WaitForSeconds(panelShowDuration);
-        panel2.SetActive(false);
-
-        // Wait for game start delay
-        yield return new WaitForSeconds(gameStartDelay);
-
-        // Start the game for the current player
-        client.SendMessage(twitchChannelName, $"Game started for {currentPlayer}!");
-
-        // Wait for the game to finish (replace this with your actual game logic)
-        yield return new WaitForSeconds(10f); // Simulating game duration
-
-        // Determine the winner (replace this with your actual game logic)
-        bool isPlayerWinner = Random.value < 0.5f; // Simulating a random winner
-
-        if (isPlayerWinner)
-        {
-            client.SendMessage(twitchChannelName, $"{currentPlayer} wins the game!");
-            // Add any additional logic for handling the winner
-        }
-        else
-        {
-            client.SendMessage(twitchChannelName, $"{currentPlayer} loses the game!");
-            // Add any additional logic for handling the loser
-        }
-
-        // Reset the game state
-        isGameStarted = false;
-        currentPlayer = null;
+        chatLogText.text += "Account created! Please type !createplayer to create a character.\n";
     }
 
-    private void OnDestroy()
+    void HandleCreatePlayerCommand(string[] args)
     {
-        client.Disconnect();
+        // Create new character
+        // TO DO: implement character creation
+
+        chatLogText.text += "Character created! You can now type !play to join the queue.\n";
+    }
+
+    public void SendMessage(string message)
+    {
+        twitchClient.SendMessage(twitchChannelName, message);
+    }
+
+    public void OnUserInput(string message)
+    {
+        SendMessage(message);
     }
 }
-*/ //commented out until later
