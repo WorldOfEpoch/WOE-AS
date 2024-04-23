@@ -5,56 +5,93 @@ using TwitchLib.Api.V5.Models.Channels;
 
 public class TwitchChatController : MonoBehaviour
 {
-    // ... (existing code remains the same)
+    private Dictionary<string, string> userAccounts = new Dictionary<string, string>();
+    private Dictionary<string, string> userCharacters = new Dictionary<string, string>();
+    private List<string> playerQueue = new List<string>();
+
+    private void Start()
+    {
+        // Initialize Twitch API connection
+        // ...
+    }
 
     private void HandleChatMessage(string message)
     {
-        // ... (existing code remains the same)
+        string username = GetUsernameFromMessage(message);
+        string command = GetCommandFromMessage(message);
 
-        if (message.StartsWith("!play"))
+        if (command.StartsWith("!play"))
         {
-            // Check if user has an account and character
             if (HasAccountAndCharacter(username))
             {
-                // Add user to player queue
                 AddToPlayerQueue(username);
             }
             else
             {
-                // Instruct user to create an account or download the app
                 SendChatMessage("Please create an account or download the app to play!");
             }
         }
-        else if (message.StartsWith("!createaccount"))
+        else if (command.StartsWith("!createaccount"))
         {
-            // Create a new account for the user
             CreateAccount(username, message.Split(' ')[1], message.Split(' ')[2]);
         }
-        else if (message.StartsWith("!createplayer"))
+        else if (command.StartsWith("!createplayer"))
         {
-            // Create a new player for the user
             CreatePlayer(username, message.Split(' ')[1], message.Split(' ')[2]);
         }
     }
 
+    private string GetUsernameFromMessage(string message)
+    {
+        // TO DO: Implement username extraction logic
+        return "username"; // placeholder
+    }
+
+    private string GetCommandFromMessage(string message)
+    {
+        // TO DO: Implement command extraction logic
+        return "!play"; // placeholder
+    }
+
     private bool HasAccountAndCharacter(string username)
     {
-        // TO DO: Implement account and character checking logic
-        return false; // placeholder
+        return userAccounts.ContainsKey(username) && userCharacters.ContainsKey(username);
     }
 
     private void AddToPlayerQueue(string username)
     {
-        // TO DO: Implement player queue logic
+        playerQueue.Add(username);
+        SendChatMessage("You have been added to the player queue!");
     }
 
     private void CreateAccount(string username, string email)
     {
-        // TO DO: Implement account creation logic
+        if (!userAccounts.ContainsKey(username))
+        {
+            userAccounts.Add(username, email);
+            SendChatMessage("Account created successfully!");
+        }
+        else
+        {
+            SendChatMessage("Account already exists!");
+        }
     }
 
     private void CreatePlayer(string username, string race, string gender)
     {
-        // TO DO: Implement player creation logic
+        if (userAccounts.ContainsKey(username) && !userCharacters.ContainsKey(username))
+        {
+            userCharacters.Add(username, $"{race} {gender}");
+            SendChatMessage("Player created successfully!");
+        }
+        else
+        {
+            SendChatMessage("You need to create an account first or you already have a player!");
+        }
+    }
+
+    private void SendChatMessage(string message)
+    {
+        // TO DO: Implement chat message sending logic
     }
 }
