@@ -1,18 +1,16 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using TwitchLib.Api;
-using TwitchLib.Api.V5.Models.Channels;
+using Atavism.Api;
+using Atavism;
 
 public class TwitchChatController : MonoBehaviour
 {
-    private Dictionary<string, string> userAccounts = new Dictionary<string, string>();
-    private Dictionary<string, string> userCharacters = new Dictionary<string, string>();
-    private List<string> playerQueue = new List<string>();
+    private AtavismApi atavismApi;
 
     private void Start()
     {
-        // Initialize Twitch API connection
-        // ...
+        // Initialize Atavism API connection
+        atavismApi = new AtavismApi("YOUR_API_KEY", "YOUR_API_SECRET");
     }
 
     private void HandleChatMessage(string message)
@@ -55,39 +53,29 @@ public class TwitchChatController : MonoBehaviour
 
     private bool HasAccountAndCharacter(string username)
     {
-        return userAccounts.ContainsKey(username) && userCharacters.ContainsKey(username);
+        // Use Atavism API to check if user has an account and character
+        return atavismApi.GetUserAccount(username) != null && atavismApi.GetUserCharacter(username) != null;
     }
 
     private void AddToPlayerQueue(string username)
     {
-        playerQueue.Add(username);
+        // Use Atavism API to add user to player queue
+        atavismApi.AddToPlayerQueue(username);
         SendChatMessage("You have been added to the player queue!");
     }
 
     private void CreateAccount(string username, string email)
     {
-        if (!userAccounts.ContainsKey(username))
-        {
-            userAccounts.Add(username, email);
-            SendChatMessage("Account created successfully!");
-        }
-        else
-        {
-            SendChatMessage("Account already exists!");
-        }
+        // Use Atavism API to create a new account
+        atavismApi.CreateAccount(username, email);
+        SendChatMessage("Account created successfully!");
     }
 
     private void CreatePlayer(string username, string race, string gender)
     {
-        if (userAccounts.ContainsKey(username) && !userCharacters.ContainsKey(username))
-        {
-            userCharacters.Add(username, $"{race} {gender}");
-            SendChatMessage("Player created successfully!");
-        }
-        else
-        {
-            SendChatMessage("You need to create an account first or you already have a player!");
-        }
+        // Use Atavism API to create a new player
+        atavismApi.CreatePlayer(username, race, gender);
+        SendChatMessage("Player created successfully!");
     }
 
     private void SendChatMessage(string message)
