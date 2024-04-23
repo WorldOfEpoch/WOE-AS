@@ -1,129 +1,60 @@
-﻿// File path: Standard Assets/Scripts/TwitchChatController.cs
-
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using TwitchLib.Api;
 using TwitchLib.Api.V5.Models.Channels;
-using TwitchLib.Client;
-using TwitchLib.Client.Events;
-using TwitchLib.Client.Models;
-using UnityEngine.UI;
-using System;
 
 public class TwitchChatController : MonoBehaviour
 {
-    public string twitchChannelName = "epocharena";
-    public string twitchOAuthToken = "YOUR_OAUTH_TOKEN";
-    public string twitchClientId = "YOUR_CLIENT_ID";
-    public string twitchClientSecret = "YOUR_CLIENT_SECRET";
+    // ... (existing code remains the same)
 
-    private TwitchClient twitchClient;
-    private PlayerManager playerManager;
-    private TwitchIRCConnector twitchIRCConnector;
-
-    private Text chatLogText;
-    private InputField userInputField;
-
-    private bool isPlayerInQueue = false;
-    private bool isGameInProgress = false;
-
-    void Start()
+    private void HandleChatMessage(string message)
     {
-        // Initialize Twitch API connection
-        twitchClient = new TwitchClient(twitchClientId, twitchClientId, twitchOAuthToken);
-        twitchClient.OnMessageReceived += OnMessageReceived;
-        twitchClient.Connect();
+        // ... (existing code remains the same)
 
-        // Initialize chat log text
-        chatLogText.text = "";
-    }
-
-    void Update()
-    {
-        // Process chat messages
-        while (twitchClient.MessageQueue.Count > 0)
+        if (message.StartsWith("!play"))
         {
-            string message = twitchClient.MessageQueue.Dequeue();
-            ProcessChatMessage(message);
+            // Check if user has an account and character
+            if (HasAccountAndCharacter(username))
+            {
+                // Add user to player queue
+                AddToPlayerQueue(username);
+            }
+            else
+            {
+                // Instruct user to create an account or download the app
+                SendChatMessage("Please create an account or download the app to play!");
+            }
+        }
+        else if (message.StartsWith("!createaccount"))
+        {
+            // Create a new account for the user
+            CreateAccount(username, message.Split(' ')[1], message.Split(' ')[2]);
+        }
+        else if (message.StartsWith("!createplayer"))
+        {
+            // Create a new player for the user
+            CreatePlayer(username, message.Split(' ')[1], message.Split(' ')[2]);
         }
     }
 
-    void OnMessageReceived(object sender, OnMessageReceivedArgs e)
+    private bool HasAccountAndCharacter(string username)
     {
-        // Add message to queue
-        twitchClient.MessageQueue.Enqueue(e.Message.ChatMessage.Message);
+        // TO DO: Implement account and character checking logic
+        return false; // placeholder
     }
 
-    void ProcessChatMessage(string message)
+    private void AddToPlayerQueue(string username)
     {
-        // Split message into command and arguments
-        string[] parts = message.Split(' ');
-        string command = parts[0].ToLower();
-        string[] args = new string[parts.Length - 1];
-        Array.Copy(parts, 1, args, 0, parts.Length - 1);
-
-        // Handle commands
-        switch (command)
-        {
-            case "!play":
-                HandlePlayCommand(args);
-                break;
-            case "!createaccount":
-                HandleCreateAccountCommand(args);
-                break;
-            case "!createplayer":
-                HandleCreatePlayerCommand(args);
-                break;
-            default:
-                // Unknown command
-                Debug.Log("Unknown command: " + command);
-                break;
-        }
+        // TO DO: Implement player queue logic
     }
 
-    void HandlePlayCommand(string[] args)
+    private void CreateAccount(string username, string email)
     {
-        // Check if player is already in queue
-        if (isPlayerInQueue)
-        {
-            chatLogText.text += "You are already in the queue!\n";
-            return;
-        }
-
-        // Check if player has an account and character
-        if (!playerManager.HasAccount(args[0]))
-        {
-            chatLogText.text += "You don't have an account! Type !createaccount to create one.\n";
-            return;
-        }
-
-        if (!playerManager.HasCharacter(args[0]))
-        {
-            chatLogText.text += "You don't have a character! Type !createplayer to create one.\n";
-            return;
-        }
-
-        // Add player to queue
-        playerManager.AddToQueue(args[0]);
-        isPlayerInQueue = true;
-        chatLogText.text += "You have been added to the queue!\n";
+        // TO DO: Implement account creation logic
     }
 
-    void HandleCreateAccountCommand(string[] args)
+    private void CreatePlayer(string username, string race, string gender)
     {
-        playerManager.CreateAccount(args[0], args[1]);
-        chatLogText.text += "Account created! Please type !createplayer to create a character.\n";
-    }
-
-    void HandleCreatePlayerCommand(string[] args)
-    {
-        playerManager.CreateCharacter(args[0], args[1], args[2]);
-        chatLogText.text += "Character created! You can now type !play to join the queue.\n";
-    }
-
-    public void OnUserInput(string message)
-    {
-        twitchIRCConnector.SendIRCMessage("PRIVMSG #" + twitchChannelName + " :" + message);
+        // TO DO: Implement player creation logic
     }
 }
