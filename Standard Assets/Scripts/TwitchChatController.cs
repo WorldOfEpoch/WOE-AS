@@ -9,26 +9,61 @@ using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using UnityEngine.UI;
-using System.Diagnostics;
+using System;
 
 public class TwitchChatController : MonoBehaviour
 {
-    // ... (rest of the script remains the same)
+    public string twitchChannelName = "epocharena";
+    public string twitchOAuthToken = "YOUR_OAUTH_TOKEN";
+    public string twitchClientId = "YOUR_CLIENT_ID";
+    public string twitchClientSecret = "YOUR_CLIENT_SECRET";
 
+    private TwitchClient twitchClient;
     private PlayerManager playerManager;
+    private TwitchIRCConnector twitchIRCConnector;
+
+    private Text chatLogText;
+    private InputField userInputField;
+
+    private bool isPlayerInQueue = false;
+    private bool isGameInProgress = false;
 
     void Start()
     {
-        // Initialize PlayerManager
-        playerManager = GetComponent<PlayerManager>();
+        // Initialize Twitch API connection
+        twitchClient = new TwitchClient(twitchClientId, twitchClientId, twitchOAuthToken);
+        twitchClient.OnMessageReceived += OnMessageReceived;
+        twitchClient.Connect();
 
-        // ... (rest of the script remains the same)
+        // Initialize chat log text
+        chatLogText.text = "";
+    }
+
+    void Update()
+    {
+        // Process chat messages
+        while (twitchClient.MessageQueue.Count > 0)
+        {
+            string message = twitchClient.MessageQueue.Dequeue();
+            ProcessChatMessage(message);
+        }
+    }
+
+    void OnMessageReceived(object sender, OnMessageReceivedArgs e)
+    {
+        // Add message to queue
+        twitchClient.MessageQueue.Enqueue(e.Message.ChatMessage.Message);
     }
 
     void ProcessChatMessage(string message)
     {
-        // ... (rest of the script remains the same)
+        // Split message into command and arguments
+        string[] parts = message.Split(' ');
+        string command = parts[0].ToLower();
+        string[] args = new string[parts.Length - 1];
+        Array.Copy(parts, 1, args, 0, parts.Length - 1);
 
+        // Handle commands
         switch (command)
         {
             case "!play":
@@ -85,5 +120,10 @@ public class TwitchChatController : MonoBehaviour
     {
         playerManager.CreateCharacter(args[0], args[1], args[2]);
         chatLogText.text += "Character created! You can now type !play to join the queue.\n";
+    }
+
+    public void OnUserInput(string message)
+    {
+        twitchIRCConnector.SendIRCMessage("PRIVMSG #" + twitchChannelName + " :" + message);
     }
 }
